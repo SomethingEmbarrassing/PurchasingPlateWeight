@@ -130,11 +130,20 @@ function handleFiles(files) {
 
         const textContent = await page.getTextContent();
         const w = viewport.width;
+        const lineGroups = new Map();
         textContent.items.forEach(item => {
           const x = item.transform[4];
           if (x > w * 0.8) {
-            extractedLines.push(item.str);
-            debugLog.push(`Page ${i}: (${x.toFixed(2)}) ${item.str}`);
+            const y = Math.round(item.transform[5]);
+            if (!lineGroups.has(y)) lineGroups.set(y, []);
+            lineGroups.get(y).push(item.str);
+          }
+        });
+        lineGroups.forEach((tokens, y) => {
+          const line = tokens.join("").trim();
+          if (line) {
+            extractedLines.push(line);
+            debugLog.push(`Page ${i}: (y=${y}) ${line}`);
           }
         });
       }
