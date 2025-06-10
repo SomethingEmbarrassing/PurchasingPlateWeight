@@ -25,6 +25,8 @@ Main function of this script is to extract weight of steel plates from cut list,
 - The script skips tokens near the top of the page to avoid title block
   numbers. Adjust the `0.15` Y-threshold in the HTML if your layout
   differs.
+- Page 1 has an additional rule that ignores text very close to the
+  top margin (around y=768 on letter pages) to suppress header values.
 
 ### To do / planned improvements
 - Add OCR functionality within the HTML script.
