@@ -117,8 +117,23 @@ function handleFiles(files) {
     pdfjsLib.getDocument({data: typedarray}).promise.then(async pdf => {
       let extractedLines = [];
       let debugLog = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.0 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: ctx, viewport }).promise;
 
-
+        const textContent = await page.getTextContent();
+        const w = viewport.width;
+        textContent.items.forEach(item => {
+          const x = item.transform[4];
+          if (x > w * 0.8) {
+            extractedLines.push(item.str);
+            debugLog.push(`Page ${i}: (${x.toFixed(2)}) ${item.str}`);
+          }
+        });
+      }
 
       debug.innerText = debugLog.join("\n");
       processText(extractedLines);
