@@ -136,7 +136,7 @@ function handleFiles(files) {
         const x = item.transform[4];
         const y = item.transform[5];
 
-        if (x > w * 0.55 && y > h * 0.15) {
+        if (x > w * 0.8 && y > h * 0.15) {
           debugLog.push(`Text: '${item.str}' @ x:${x.toFixed(1)}, y:${y.toFixed(1)} --> Included`);
           ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
           ctx.strokeRect(x, canvas.height - y, 50, 12);
