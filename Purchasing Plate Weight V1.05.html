@@ -10,6 +10,7 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Roboto', sans-serif; background: #f9f9f9; color: #333; padding: 20px; }
@@ -31,6 +32,9 @@
       text-align: center;
       margin-bottom: 20px;
       border-radius: 10px;
+    }
+    #drop-area.hover {
+      background: #d0e7ff;
     }
     canvas { border: 1px dashed #ccc; margin: 10px auto; display: block; background: #fff; }
     table {
@@ -96,6 +100,7 @@
 
 <script>
 const fileElem = document.getElementById("fileElem");
+const dropArea = document.getElementById("drop-area");
 const output = document.getElementById("output");
 const summary = document.getElementById("summary");
 const debug = document.getElementById("debug");
@@ -106,6 +111,20 @@ const downloadPdfBtn = document.getElementById("downloadPdf");
 const toggleDebug = document.getElementById("toggleDebug");
 let cleanData = [];
 
+["dragenter", "dragover"].forEach(evt => {
+  dropArea.addEventListener(evt, e => {
+    e.preventDefault();
+    dropArea.classList.add("hover");
+  });
+});
+["dragleave", "drop"].forEach(evt => {
+  dropArea.addEventListener(evt, e => {
+    e.preventDefault();
+    dropArea.classList.remove("hover");
+  });
+});
+dropArea.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+
 toggleDebug.addEventListener("click", () => {
   debug.style.display = debug.style.display === "none" ? "block" : "none";
   toggleDebug.innerText = debug.style.display === "none" ? "Show Debug Log" : "Hide Debug Log";
@@ -113,49 +132,56 @@ toggleDebug.addEventListener("click", () => {
 
 fileElem.addEventListener("change", e => handleFiles(e.target.files));
 
-function handleFiles(files) {
+async function handleFiles(files) {
   const file = files[0];
   const reader = new FileReader();
-  reader.onload = function() {
+  reader.onload = async function() {
     const typedarray = new Uint8Array(this.result);
-    pdfjsLib.getDocument({data: typedarray}).promise.then(async pdf => {
-      let extractedLines = [];
-      let debugLog = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.0 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: ctx, viewport }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+    let extractedLines = [];
+    let debugLog = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.0 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvasContext: ctx, viewport }).promise;
 
-        const textContent = await page.getTextContent();
-        const w = viewport.width;
-        const h = viewport.height;
-        const lineGroups = new Map();
-        textContent.items.forEach(item => {
-          const x = item.transform[4];
-          const yRaw = item.transform[5];
-          // Skip page 1 header text very near the top (y ~ 768 on letter pages)
-          const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
-          // Exclude tokens near the top title block
-          if (!isTopOfFirstPage && x > w * 0.8 && yRaw > h * 0.15) {
-            const y = Math.round(yRaw);
-            if (!lineGroups.has(y)) lineGroups.set(y, []);
-            lineGroups.get(y).push(item.str);
-          }
-        });
-        lineGroups.forEach((tokens, y) => {
-          const line = tokens.join("").trim();
-          if (line) {
-            extractedLines.push(line);
-            debugLog.push(`Page ${i}: (y=${y}) ${line}`);
-          }
+      const textContent = await page.getTextContent();
+      const w = viewport.width;
+      const h = viewport.height;
+      const lineGroups = new Map();
+      textContent.items.forEach(item => {
+        const x = item.transform[4];
+        const yRaw = item.transform[5];
+        // Skip page 1 header text very near the top (y ~ 768 on letter pages)
+        const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
+        // Exclude tokens near the top title block
+        if (!isTopOfFirstPage && x > w * 0.8 && yRaw > h * 0.15) {
+          const y = Math.round(yRaw);
+          if (!lineGroups.has(y)) lineGroups.set(y, []);
+          lineGroups.get(y).push(item.str);
+        }
+      });
+      lineGroups.forEach((tokens, y) => {
+        const line = tokens.join("").trim();
+        if (line) {
+          extractedLines.push(line);
+          debugLog.push(`Page ${i}: (y=${y}) ${line}`);
+        }
+      });
+
+      if (textContent.items.length === 0) {
+        const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+        text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach(line => {
+          extractedLines.push(line);
+          debugLog.push(`OCR Page ${i}: ${line}`);
         });
       }
+    }
 
-      debug.innerText = debugLog.join("\n");
-      processText(extractedLines);
-    });
+    debug.innerText = debugLog.join("\n");
+    processText(extractedLines);
   };
   reader.readAsArrayBuffer(file);
 }
