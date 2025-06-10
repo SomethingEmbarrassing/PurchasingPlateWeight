@@ -6,7 +6,7 @@ Main function of this script is to extract weight of steel plates from cut list,
 ## Running
 1. Clone the repository or download the files.
 2. Serve the directory with a local web server (e.g. `python -m http.server`).
-   Then open `Purchasing Plate Weight V1.05.html` through that address.
+   Then open `Purchasing Plate Weight V1.06.html` through that address.
    The HTML file loads **pdf.js**, **xlsx**, and **jsPDF** directly from CDNs so
    no extra installation is required.
 3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
