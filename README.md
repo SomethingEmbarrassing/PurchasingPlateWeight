@@ -22,6 +22,9 @@ Main function of this script is to extract weight of steel plates from cut list,
 ### Current limitations
 - Drag-and-drop upload is still pending; use the file picker for now.
 - No OCR support, so scanned PDFs cannot be read.
+- The script skips tokens near the top of the page to avoid title block
+  numbers. Adjust the `0.15` Y-threshold in the HTML if your layout
+  differs.
 
 ### To do / planned improvements
 - Add OCR functionality within the HTML script.
