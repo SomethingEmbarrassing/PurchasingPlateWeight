@@ -179,8 +179,8 @@ async function handleFiles(files) {
         const yRaw = item.transform[5];
         // Skip page 1 header text very near the top (y ~ 768 on letter pages)
         const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
-        // Exclude tokens near the top title block
-        if (!isTopOfFirstPage && x > w * 0.8 && yRaw > h * 0.15) {
+        // Exclude tokens in the top 15% of the page (title block area)
+        if (!isTopOfFirstPage && x > w * 0.8 && yRaw < h * 0.85) {
           const y = Math.round(yRaw);
           if (!lineGroups.has(y)) lineGroups.set(y, []);
           lineGroups.get(y).push(item.str);
