@@ -22,8 +22,9 @@ Main function of this script is to extract weight of steel plates from cut list,
 - OCR is provided via Tesseract.js but may be slow or inaccurate for complex
   scans.
 - The script skips tokens near the top of the page to avoid title block
-  numbers. Adjust the `0.15` Y-threshold in the HTML if your layout
-  differs.
+  numbers. The comparison uses `0.85` (meaning 85% of the page height) to
+  exclude the top 15% of the page. Adjust this threshold in the HTML if your
+  layout differs.
 - Page 1 has an additional rule that ignores text very close to the
   top margin (around y=768 on letter pages) to suppress header values.
 
