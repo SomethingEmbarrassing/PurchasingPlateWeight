@@ -9,9 +9,10 @@ Main function of this script is to extract weight of steel plates from cut list,
    Then open `Purchasing Plate Weight V1.05.html` through that address.
    The HTML file loads **pdf.js**, **xlsx**, and **jsPDF** directly from CDNs so
    no extra installation is required.
-3. Drag and drop cut list PDFs onto the page (or use the file picker). The
-   script will extract the weight values, sum them and display the total along
-   with download options for Excel and PDF.
+3. Use the file picker to select cut list PDFs. Drag-and-drop support is
+   planned but not yet implemented. The script will extract the weight values,
+   sum them and display the total along with download options for Excel and
+   PDF.
 
 ### Dependencies
 - **pdf.js** – parses PDF files in the browser.
@@ -19,8 +20,7 @@ Main function of this script is to extract weight of steel plates from cut list,
 - **jsPDF** – creates the PDF export of the results.
 
 ### Current limitations
-- Only the first page of the PDF is processed.
-- Drag-and-drop upload is not yet implemented; use the file picker.
+- Drag-and-drop upload is still pending; use the file picker for now.
 - No OCR support, so scanned PDFs cannot be read.
 
 ### To do / planned improvements
