@@ -192,7 +192,7 @@ async function handleFiles(files) {
         const yRaw = item.transform[5];
         // Skip page 1 header text very near the top (y ~ 768 on letter pages)
         const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
-        // Capture weights starting after the camber reference
+        // Capture weights below the camber reference, excluding the top 15% of the page
         if (!isTopOfFirstPage && x > startX && yRaw < startY) {
           const y = Math.round(yRaw);
           if (!lineGroups.has(y)) lineGroups.set(y, []);
