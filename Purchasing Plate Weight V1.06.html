@@ -280,12 +280,24 @@ downloadPdfBtn.addEventListener("click", () => {
   const doc = new jsPDF();
   doc.setFontSize(10);
   let y = 10;
+
   if (poNumber) {
     doc.text(`PO Number: ${poNumber}`, 10, y);
     y += 7;
   }
 
-  cleanData.forEach(row => {
+  doc.text(`Total Weight: ${totalWeight.toLocaleString()} lbs`, 10, y);
+  y += 7;
+  doc.text(
+    `Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+    })}`,
+    10,
+    y
+  );
+  y += 10;
+
+  cleanData.forEach((row) => {
     doc.text(`Weight: ${row.weight.toLocaleString()} lbs`, 10, y);
     y += 7;
     if (y > 280) {
@@ -293,10 +305,7 @@ downloadPdfBtn.addEventListener("click", () => {
       y = 10;
     }
   });
-  y += 10;
-  doc.text(`Total Weight: ${totalWeight.toLocaleString()} lbs`, 10, y);
-  y += 7;
-  doc.text(`Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 10, y);
+
   doc.save("cleaned_weights.pdf");
 });
 </script>

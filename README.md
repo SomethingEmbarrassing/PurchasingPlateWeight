@@ -33,9 +33,5 @@ Main function of this script is to extract weight of steel plates from cut list,
 
 
 ### To do / planned improvements
-- Cost multiplier configuration implemented
 - Support additional export formats such as CSV.
 - Provide UI controls for adjusting parsing thresholds.
-- Add an input area where the user can specify a PO number.
-- Place the total weight, dollar value and the entered PO number onto the
-  generated PDF before returning it to the user.
