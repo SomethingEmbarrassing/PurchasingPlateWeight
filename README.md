@@ -1,7 +1,7 @@
 # PurchasingPlateWeight
 Purchasing has been manually adding printed PDFs and multiplying for cost. HTML Doc to automate.
 
-Main function of this script is to extract weight of steel plates from cut list, sum weights, multiply by 0.95 and display cost.
+Main function of this script is to extract weight of steel plates from cut list, sum weights and display an estimated cost using a user supplied multiplier (default 0.95).
 
 ## Running
 1. Clone the repository or download the files.
@@ -15,6 +15,7 @@ Main function of this script is to extract weight of steel plates from cut list,
    weight values, sums them and displays the total along with download options
    for Excel and PDF.
 
+
 ### Dependencies
 - **pdf.js** – parses PDF files in the browser.
 - **xlsx** – generates Excel files for download.
@@ -23,13 +24,16 @@ Main function of this script is to extract weight of steel plates from cut list,
 ### Current limitations
 - OCR is provided via Tesseract.js but may be slow or inaccurate for complex
   scans.
+
 - Parsing relies on finding the "Camber" column header to start reading the
   weight values from the rightmost column. Once the header is found the script
   continues reading values on all subsequent pages. If the anchor text is
   missing or spelled differently the results may be incorrect.
+
 
 ### To do / planned improvements
 - Allow configuring the cost multiplier.
 - Add an input area where the user can specify a PO number.
 - Place the total weight, dollar value and the entered PO number onto the
   generated PDF before returning it to the user.
+
