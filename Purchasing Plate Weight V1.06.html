@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Roboto', sans-serif; background: #f9f9f9; color: #333; padding: 20px; }
@@ -90,16 +91,26 @@
   <p><strong>Drop your PDF here</strong></p>
   <input type="file" id="fileElem" accept="application/pdf" />
 </div>
+<div style="margin-top:10px">
+  <label for="costMultiplier">Cost Multiplier:</label>
+  <input type="number" id="costMultiplier" value="0.95" step="0.01" style="width:80px">
+</div>
+<div style="margin-top:10px">
+  <label for="poNumber">PO Number:</label>
+  <input type="text" id="poNumber" style="width:120px">
+</div>
 <canvas id="pdf-canvas"></canvas>
 <div id="output"></div>
 <div id="summary"></div>
 <div id="debug"></div>
 <button id="download" style="display:none">Download as Excel</button>
 <button id="downloadPdf" style="display:none">Download as PDF</button>
+<button id="annotatePdf" style="display:none">Download Annotated PDF</button>
 <button id="toggleDebug">Show Debug Log</button>
 
 <script>
-const fileElem = document.getElementById("fileElem");
+
+  const fileElem = document.getElementById("fileElem");
 const dropArea = document.getElementById("drop-area");
 const output = document.getElementById("output");
 const summary = document.getElementById("summary");
@@ -109,13 +120,22 @@ const ctx = canvas.getContext("2d");
 const downloadBtn = document.getElementById("download");
 const downloadPdfBtn = document.getElementById("downloadPdf");
 const toggleDebug = document.getElementById("toggleDebug");
+const costInput = document.getElementById("costMultiplier");
+const poInput = document.getElementById("poNumber");
+let costMultiplier = parseFloat(costInput.value) || 0.95;
+let poNumber = poInput.value || "";
 let cleanData = [];
+let totalWeight = 0;
+
+function updateSummary() {
+  summary.innerText = `Total Weight: ${totalWeight.toLocaleString()} lbs | Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+}
 
 const featureStatus = {
   ocr: typeof Tesseract !== 'undefined',
   dragDrop: true,
   multiPage: true,
-  costConfig: false,
+  costConfig: true,
   csvExport: false,
   parsingControls: false
 };
@@ -153,6 +173,15 @@ toggleDebug.addEventListener("click", () => {
   toggleDebug.innerText = debug.style.display === "none" ? "Show Debug Log" : "Hide Debug Log";
 });
 
+costInput.addEventListener("input", () => {
+  costMultiplier = parseFloat(costInput.value) || 0;
+  updateSummary();
+});
+
+poInput.addEventListener("input", () => {
+  poNumber = poInput.value;
+});
+
 fileElem.addEventListener("change", e => handleFiles(e.target.files));
 
 async function handleFiles(files) {
@@ -160,6 +189,7 @@ async function handleFiles(files) {
   const reader = new FileReader();
   reader.onload = async function() {
     const typedarray = new Uint8Array(this.result);
+    originalPdfBytes = this.result;
     const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
     let extractedLines = [];
     let debugLog = [];
@@ -172,26 +202,31 @@ async function handleFiles(files) {
 
       const textContent = await page.getTextContent();
       const w = viewport.width;
+      const h = viewport.height;
       const lineGroups = new Map();
+      const camber = textContent.items.find(t => /camber/i.test(t.str));
+      let startX = w * 0.8;
+      let startY = h * 0.85;
+      if (camber) {
+        startX = camber.transform[4] + w * 0.058;
+        startY = camber.transform[5] - h * 0.01;
+      }
       textContent.items.forEach(item => {
         const x = item.transform[4];
         const yRaw = item.transform[5];
-        if (x > w * 0.8) {
+        // Skip page 1 header text very near the top (y ~ 768 on letter pages)
+        const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
+
+        // Capture weights below the camber reference, excluding the top 15% of the page
+        if (!isTopOfFirstPage && x > startX && yRaw < startY) {
           const y = Math.round(yRaw);
           if (!lineGroups.has(y)) lineGroups.set(y, []);
           lineGroups.get(y).push(item.str);
         }
       });
-
-      let capture = false;
       lineGroups.forEach((tokens, y) => {
         const line = tokens.join("").trim();
-        if (/camber/i.test(line)) {
-          capture = true;
-          debugLog.push(`Page ${i}: found camber anchor at y=${y}`);
-          return;
-        }
-        if (capture && line) {
+        if (line) {
           extractedLines.push(line);
           debugLog.push(`Page ${i}: (y=${y}) ${line}`);
         }
@@ -206,15 +241,10 @@ async function handleFiles(files) {
       }
     }
 
-    debug.innerText = `Features\n${featureSummary()}\n\n${debugLog.join("\n")}`;
-    processText(extractedLines);
-  };
-  reader.readAsArrayBuffer(file);
-}
 
 function processText(lines) {
   cleanData = [];
-  let totalWeight = 0;
+  totalWeight = 0;
 
   lines.forEach(line => {
     const num = parseFloat(line.replace(/[^0-9.]/g, ""));
@@ -230,13 +260,16 @@ function processText(lines) {
   });
   html += '</table>';
   output.innerHTML = html;
-  summary.innerText = `Total Weight: ${totalWeight.toLocaleString()} lbs | Estimated Cost: $${(totalWeight * 0.95).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  updateSummary();
   downloadBtn.style.display = "inline-block";
   downloadPdfBtn.style.display = "inline-block";
 }
 
+
 downloadBtn.addEventListener("click", () => {
-  const ws = XLSX.utils.json_to_sheet(cleanData);
+  const header = [["PO Number", poNumber], ["Weight (lbs)"]];
+  const dataRows = cleanData.map(row => [row.weight]);
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...dataRows]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Weights");
   XLSX.writeFile(wb, "cleaned_weights.xlsx");
@@ -247,7 +280,24 @@ downloadPdfBtn.addEventListener("click", () => {
   const doc = new jsPDF();
   doc.setFontSize(10);
   let y = 10;
-  cleanData.forEach(row => {
+
+  if (poNumber) {
+    doc.text(`PO Number: ${poNumber}`, 10, y);
+    y += 7;
+  }
+
+  doc.text(`Total Weight: ${totalWeight.toLocaleString()} lbs`, 10, y);
+  y += 7;
+  doc.text(
+    `Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+    })}`,
+    10,
+    y
+  );
+  y += 10;
+
+  cleanData.forEach((row) => {
     doc.text(`Weight: ${row.weight.toLocaleString()} lbs`, 10, y);
     y += 7;
     if (y > 280) {
@@ -255,6 +305,7 @@ downloadPdfBtn.addEventListener("click", () => {
       y = 10;
     }
   });
+
   doc.save("cleaned_weights.pdf");
 });
 </script>

@@ -1,7 +1,7 @@
 # PurchasingPlateWeight
 Purchasing has been manually adding printed PDFs and multiplying for cost. HTML Doc to automate.
 
-Main function of this script is to extract weight of steel plates from cut list, sum weights, multiply by 0.95 and display cost.
+Main function of this script is to extract weight of steel plates from cut list, sum weights and display an estimated cost using a user supplied multiplier (default 0.95).
 
 ## Running
 1. Clone the repository or download the files.
@@ -10,8 +10,9 @@ Main function of this script is to extract weight of steel plates from cut list,
    The HTML file loads **pdf.js**, **xlsx**, and **jsPDF** directly from CDNs so
    no extra installation is required.
 3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
-   extracts the weight values, sums them and displays the total along with
-   download options for Excel and PDF.
+  extracts the weight values, sums them and displays the total along with
+  download options for Excel, a plain PDF, or an annotated version of the
+  original PDF showing the weight and price.
 
 ### Dependencies
 - **pdf.js** – parses PDF files in the browser.
@@ -21,12 +22,21 @@ Main function of this script is to extract weight of steel plates from cut list,
 ### Current limitations
 - OCR is provided via Tesseract.js but may be slow or inaccurate for complex
   scans.
-- Parsing relies on finding the "Camber" column header to start reading the
-  weight values from the rightmost column. If that anchor is missing or spelled
-  differently the results may be incorrect.
+
+- The script looks for the word `camber` near the top of each page. Weight
+  extraction begins 1% of the page height below the `R` in that word and ignores
+  any tokens located above `h * 0.85` (the top 15 % of the page). This helps
+  avoid the title block while adapting to layout changes.
+
+- Page 1 has an additional rule that ignores text very close to the
+  top margin (around y=768 on letter pages) to suppress header values.
+
 
 ### To do / planned improvements
-- Allow configuring the cost multiplier.
-- Add an input area where the user can specify a PO number.
+
+- Allow configuring the cost multiplier. (check if this is already implemented)
+- Add an input area where the user can specify a PO number. (check if this is already implemented)
 - Place the total weight, dollar value and the entered PO number onto the
   generated PDF before returning it to the user.
+- Provide UI controls for adjusting parsing thresholds.
+
