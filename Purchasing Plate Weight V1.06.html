@@ -144,6 +144,7 @@ function featureSummary() {
   });
 });
 dropArea.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+dropArea.addEventListener("click", () => fileElem.click());
 
 toggleDebug.addEventListener("click", () => {
   debug.style.display = debug.style.display === "none" ? "block" : "none";
@@ -163,6 +164,7 @@ async function handleFiles(files) {
     const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
     let extractedLines = [];
     let debugLog = [];
+    let capturing = false;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale: 1.0 });
@@ -172,23 +174,25 @@ async function handleFiles(files) {
 
       const textContent = await page.getTextContent();
       const w = viewport.width;
-      const h = viewport.height;
       const lineGroups = new Map();
       textContent.items.forEach(item => {
         const x = item.transform[4];
         const yRaw = item.transform[5];
-        // Skip page 1 header text very near the top (y ~ 768 on letter pages)
-        const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
-        // Exclude tokens in the top 15% of the page (title block area)
-        if (!isTopOfFirstPage && x > w * 0.8 && yRaw < h * 0.85) {
+        if (x > w * 0.8) {
           const y = Math.round(yRaw);
           if (!lineGroups.has(y)) lineGroups.set(y, []);
           lineGroups.get(y).push(item.str);
         }
       });
+
       lineGroups.forEach((tokens, y) => {
         const line = tokens.join("").trim();
-        if (line) {
+        if (/camber/i.test(line)) {
+          capturing = true;
+          debugLog.push(`Page ${i}: found camber anchor at y=${y}`);
+          return;
+        }
+        if (capturing && line) {
           extractedLines.push(line);
           debugLog.push(`Page ${i}: (y=${y}) ${line}`);
         }
@@ -220,6 +224,14 @@ function processText(lines) {
       totalWeight += num;
     }
   });
+
+  if (cleanData.length === 0) {
+    output.innerHTML = '<p>No weight values found.</p>';
+    summary.innerText = '';
+    downloadBtn.style.display = 'none';
+    downloadPdfBtn.style.display = 'none';
+    return;
+  }
 
   let html = '<table><tr><th>Weight (lbs)</th></tr>';
   cleanData.forEach(row => {
