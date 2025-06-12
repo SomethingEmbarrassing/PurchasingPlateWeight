@@ -95,6 +95,10 @@
   <label for="costMultiplier">Cost Multiplier:</label>
   <input type="number" id="costMultiplier" value="0.95" step="0.01" style="width:80px">
 </div>
+<div style="margin-top:10px">
+  <label for="poNumber">PO Number:</label>
+  <input type="text" id="poNumber" style="width:120px">
+</div>
 <canvas id="pdf-canvas"></canvas>
 <div id="output"></div>
 <div id="summary"></div>
@@ -117,7 +121,9 @@ const downloadBtn = document.getElementById("download");
 const downloadPdfBtn = document.getElementById("downloadPdf");
 const toggleDebug = document.getElementById("toggleDebug");
 const costInput = document.getElementById("costMultiplier");
+const poInput = document.getElementById("poNumber");
 let costMultiplier = parseFloat(costInput.value) || 0.95;
+let poNumber = poInput.value || "";
 let cleanData = [];
 let totalWeight = 0;
 
@@ -170,6 +176,10 @@ toggleDebug.addEventListener("click", () => {
 costInput.addEventListener("input", () => {
   costMultiplier = parseFloat(costInput.value) || 0;
   updateSummary();
+});
+
+poInput.addEventListener("input", () => {
+  poNumber = poInput.value;
 });
 
 fileElem.addEventListener("change", e => handleFiles(e.target.files));
@@ -257,7 +267,9 @@ function processText(lines) {
 
 
 downloadBtn.addEventListener("click", () => {
-  const ws = XLSX.utils.json_to_sheet(cleanData);
+  const header = [["PO Number", poNumber], ["Weight (lbs)"]];
+  const dataRows = cleanData.map(row => [row.weight]);
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...dataRows]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Weights");
   XLSX.writeFile(wb, "cleaned_weights.xlsx");
@@ -268,6 +280,10 @@ downloadPdfBtn.addEventListener("click", () => {
   const doc = new jsPDF();
   doc.setFontSize(10);
   let y = 10;
+  if (poNumber) {
+    doc.text(`PO Number: ${poNumber}`, 10, y);
+    y += 7;
+  }
 
   cleanData.forEach(row => {
     doc.text(`Weight: ${row.weight.toLocaleString()} lbs`, 10, y);
