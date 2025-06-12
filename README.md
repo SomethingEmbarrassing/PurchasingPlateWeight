@@ -9,10 +9,12 @@ Main function of this script is to extract weight of steel plates from cut list,
    Then open `Purchasing Plate Weight V1.06.html` through that address.
    The HTML file loads **pdf.js**, **xlsx**, and **jsPDF** directly from CDNs so
    no extra installation is required.
-3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
-  extracts the weight values, sums them and displays the total along with
-  download options for Excel, a plain PDF, or an annotated version of the
-  original PDF showing the weight and price.
+3. Use the file picker or drag-and-drop area to load cut list PDFs. Simply
+   clicking the drop zone will open the file dialog. Processing starts
+   automatically once the PDF is selected or dropped. The script extracts the
+   weight values, sums them and displays the total along with download options
+   for Excel and PDF.
+
 
 ### Dependencies
 - **pdf.js** – parses PDF files in the browser.
@@ -23,13 +25,10 @@ Main function of this script is to extract weight of steel plates from cut list,
 - OCR is provided via Tesseract.js but may be slow or inaccurate for complex
   scans.
 
-- The script looks for the word `camber` near the top of each page. Weight
-  extraction begins 1% of the page height below the `R` in that word and ignores
-  any tokens located above `h * 0.85` (the top 15 % of the page). This helps
-  avoid the title block while adapting to layout changes.
-
-- Page 1 has an additional rule that ignores text very close to the
-  top margin (around y=768 on letter pages) to suppress header values.
+- Parsing relies on finding the "Camber" column header to start reading the
+  weight values from the rightmost column. Once the header is found the script
+  continues reading values on all subsequent pages. If the anchor text is
+  missing or spelled differently the results may be incorrect.
 
 
 ### To do / planned improvements
@@ -39,4 +38,5 @@ Main function of this script is to extract weight of steel plates from cut list,
 - Place the total weight, dollar value and the entered PO number onto the
   generated PDF before returning it to the user.
 - Provide UI controls for adjusting parsing thresholds.
+
 
