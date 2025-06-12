@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Cut List Calculator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script> -->
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
@@ -87,7 +87,7 @@
 </head>
 <body>
 <h2><img src="https://nwsfab.com/wp-content/themes/nwsfab/img/logo.svg" alt="NWSFab Logo">Cut List Calculator</h2>
-<div id="drop-area">
+  ocr: false, // OCR disabled - run externally if needed
   <p><strong>Drop your PDF here</strong></p>
   <input type="file" id="fileElem" accept="application/pdf" />
 </div>
@@ -173,10 +173,16 @@ toggleDebug.addEventListener("click", () => {
   toggleDebug.innerText = debug.style.display === "none" ? "Show Debug Log" : "Hide Debug Log";
 });
 
-costInput.addEventListener("input", () => {
-  costMultiplier = parseFloat(costInput.value) || 0;
-  updateSummary();
-});
+      /*
+        // OCR via Tesseract is disabled. Run OCR externally if needed.
+        text.split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(Boolean)
+            .forEach(line => {
+              extractedLines.push(line);
+              debugLog.push(`OCR Page ${i}: ${line}`);
+            });
+      */
 
 dropArea.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
 dropArea.addEventListener("click", () => fileElem.click());

@@ -1,8 +1,8 @@
 # PurchasingPlateWeight
 Purchasing has been manually adding printed PDFs and multiplying for cost. HTML Doc to automate.
 
-Main function of this script is to extract weight of steel plates from cut list, sum weights and display an estimated cost using a user supplied multiplier (default 0.95).
-
+- OCR via Tesseract.js has been disabled. Run OCR externally if the PDF does
+  not already contain selectable text.
 ## Running
 1. Clone the repository or download the files.
 2. Serve the directory with a local web server (e.g. `python -m http.server`).
