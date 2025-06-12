@@ -1,7 +1,7 @@
 # PurchasingPlateWeight
 Purchasing has been manually adding printed PDFs and multiplying for cost. HTML Doc to automate.
 
-Main function of this script is to extract weight of steel plates from cut list, sum weights, multiply by 0.95 and display cost.
+Main function of this script is to extract weight of steel plates from cut list, sum weights and display an estimated cost using a user supplied multiplier (default 0.95).
 
 ## Running
 1. Clone the repository or download the files.
@@ -33,7 +33,7 @@ Main function of this script is to extract weight of steel plates from cut list,
 
 
 ### To do / planned improvements
-- Allow configuring the cost multiplier.
+- Cost multiplier configuration implemented
 - Support additional export formats such as CSV.
 - Provide UI controls for adjusting parsing thresholds.
 - Add an input area where the user can specify a PO number.

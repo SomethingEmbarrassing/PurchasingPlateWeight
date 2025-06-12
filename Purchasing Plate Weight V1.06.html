@@ -91,6 +91,10 @@
   <p><strong>Drop your PDF here</strong></p>
   <input type="file" id="fileElem" accept="application/pdf" />
 </div>
+<div style="margin-top:10px">
+  <label for="costMultiplier">Cost Multiplier:</label>
+  <input type="number" id="costMultiplier" value="0.95" step="0.01" style="width:80px">
+</div>
 <canvas id="pdf-canvas"></canvas>
 <div id="output"></div>
 <div id="summary"></div>
@@ -101,7 +105,8 @@
 <button id="toggleDebug">Show Debug Log</button>
 
 <script>
-const fileElem = document.getElementById("fileElem");
+
+  const fileElem = document.getElementById("fileElem");
 const dropArea = document.getElementById("drop-area");
 const output = document.getElementById("output");
 const summary = document.getElementById("summary");
@@ -110,17 +115,21 @@ const canvas = document.getElementById("pdf-canvas");
 const ctx = canvas.getContext("2d");
 const downloadBtn = document.getElementById("download");
 const downloadPdfBtn = document.getElementById("downloadPdf");
-const annotatePdfBtn = document.getElementById("annotatePdf");
 const toggleDebug = document.getElementById("toggleDebug");
+const costInput = document.getElementById("costMultiplier");
+let costMultiplier = parseFloat(costInput.value) || 0.95;
 let cleanData = [];
-let currentTotalWeight = 0;
-let originalPdfBytes;
+let totalWeight = 0;
+
+function updateSummary() {
+  summary.innerText = `Total Weight: ${totalWeight.toLocaleString()} lbs | Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+}
 
 const featureStatus = {
   ocr: typeof Tesseract !== 'undefined',
   dragDrop: true,
   multiPage: true,
-  costConfig: false,
+  costConfig: true,
   csvExport: false,
   parsingControls: false
 };
@@ -156,6 +165,11 @@ toggleDebug.addEventListener("click", () => {
     debug.innerText = `Features\n${featureSummary()}`;
   }
   toggleDebug.innerText = debug.style.display === "none" ? "Show Debug Log" : "Hide Debug Log";
+});
+
+costInput.addEventListener("input", () => {
+  costMultiplier = parseFloat(costInput.value) || 0;
+  updateSummary();
 });
 
 fileElem.addEventListener("change", e => handleFiles(e.target.files));
@@ -217,14 +231,10 @@ async function handleFiles(files) {
       }
     }
 
-    debug.innerText = `Features\n${featureSummary()}\n\n${debugLog.join("\n")}`;
-    processText(extractedLines);
-  };
-  reader.readAsArrayBuffer(file);
-}
+
 function processText(lines) {
   cleanData = [];
-  let totalWeight = 0;
+  totalWeight = 0;
 
   lines.forEach(line => {
     const num = parseFloat(line.replace(/[^0-9.]/g, ""));
@@ -240,12 +250,11 @@ function processText(lines) {
   });
   html += '</table>';
   output.innerHTML = html;
-  currentTotalWeight = totalWeight;
-  summary.innerText = `Total Weight: ${totalWeight.toLocaleString()} lbs | Estimated Cost: $${(totalWeight * 0.95).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  updateSummary();
   downloadBtn.style.display = "inline-block";
   downloadPdfBtn.style.display = "inline-block";
-  annotatePdfBtn.style.display = "inline-block";
 }
+
 
 downloadBtn.addEventListener("click", () => {
   const ws = XLSX.utils.json_to_sheet(cleanData);
@@ -259,6 +268,7 @@ downloadPdfBtn.addEventListener("click", () => {
   const doc = new jsPDF();
   doc.setFontSize(10);
   let y = 10;
+
   cleanData.forEach(row => {
     doc.text(`Weight: ${row.weight.toLocaleString()} lbs`, 10, y);
     y += 7;
@@ -267,38 +277,11 @@ downloadPdfBtn.addEventListener("click", () => {
       y = 10;
     }
   });
+  y += 10;
+  doc.text(`Total Weight: ${totalWeight.toLocaleString()} lbs`, 10, y);
+  y += 7;
+  doc.text(`Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 10, y);
   doc.save("cleaned_weights.pdf");
-});
-
-annotatePdfBtn.addEventListener("click", async () => {
-  if (!originalPdfBytes) return;
-  const { PDFDocument, StandardFonts, rgb } = PDFLib;
-  const pdfDoc = await PDFDocument.load(originalPdfBytes);
-  const pages = pdfDoc.getPages();
-  const first = pages[0];
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  first.drawText(`Total Weight: ${currentTotalWeight.toLocaleString()} lbs`, {
-    x: 50,
-    y: 40,
-    size: 12,
-    font,
-    color: rgb(0, 0, 0)
-  });
-  first.drawText(`Price: $${(currentTotalWeight * 0.95).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, {
-    x: 50,
-    y: 25,
-    size: 12,
-    font,
-    color: rgb(0, 0, 0)
-  });
-  const bytes = await pdfDoc.save();
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'annotated.pdf';
-  a.click();
-  URL.revokeObjectURL(url);
 });
 </script>
 </body>
