@@ -12,7 +12,8 @@ Main function of this script is to extract weight of steel plates from cut list,
 3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
   extracts the weight values, sums them and displays the total along with
   download options for Excel, a plain PDF, or an annotated version of the
-  original PDF showing the weight and price.
+  original PDF. The annotated export writes the PO number, total weight and
+  estimated cost onto the first page so the summary travels with the document.
 
 ### Dependencies
 - **pdf.js** – parses PDF files in the browser.
@@ -33,9 +34,5 @@ Main function of this script is to extract weight of steel plates from cut list,
 
 
 ### To do / planned improvements
-- Cost multiplier configuration implemented
 - Support additional export formats such as CSV.
 - Provide UI controls for adjusting parsing thresholds.
-- Add an input area where the user can specify a PO number.
-- Place the total weight, dollar value and the entered PO number onto the
-  generated PDF before returning it to the user.
