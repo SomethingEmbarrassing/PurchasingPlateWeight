@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Cut List Calculator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js"></script> -->
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
@@ -87,7 +87,7 @@
 </head>
 <body>
 <h2><img src="https://nwsfab.com/wp-content/themes/nwsfab/img/logo.svg" alt="NWSFab Logo">Cut List Calculator</h2>
-<div id="drop-area">
+  ocr: false, // OCR disabled - run externally if needed
   <p><strong>Drop your PDF here</strong></p>
   <input type="file" id="fileElem" accept="application/pdf" />
 </div>
@@ -128,6 +128,7 @@ let poNumber = poInput.value || "";
 let cleanData = [];
 let totalWeight = 0;
 let originalPdfBytes;
+
 
 function updateSummary() {
   summary.innerText = `Total Weight: ${totalWeight.toLocaleString()} lbs | Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -175,10 +176,19 @@ toggleDebug.addEventListener("click", () => {
   toggleDebug.innerText = debug.style.display === "none" ? "Show Debug Log" : "Hide Debug Log";
 });
 
-costInput.addEventListener("input", () => {
-  costMultiplier = parseFloat(costInput.value) || 0;
-  updateSummary();
-});
+      /*
+        // OCR via Tesseract is disabled. Run OCR externally if needed.
+        text.split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(Boolean)
+            .forEach(line => {
+              extractedLines.push(line);
+              debugLog.push(`OCR Page ${i}: ${line}`);
+            });
+      */
+
+dropArea.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+dropArea.addEventListener("click", () => fileElem.click());
 
 poInput.addEventListener("input", () => {
   poNumber = poInput.value;
@@ -188,13 +198,14 @@ fileElem.addEventListener("change", e => handleFiles(e.target.files));
 
 async function handleFiles(files) {
   const file = files[0];
+
   const reader = new FileReader();
   reader.onload = async function() {
     const typedarray = new Uint8Array(this.result);
-    originalPdfBytes = this.result;
     const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
     let extractedLines = [];
     let debugLog = [];
+    let capturing = false;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale: 1.0 });
@@ -204,31 +215,25 @@ async function handleFiles(files) {
 
       const textContent = await page.getTextContent();
       const w = viewport.width;
-      const h = viewport.height;
       const lineGroups = new Map();
-      const camber = textContent.items.find(t => /camber/i.test(t.str));
-      let startX = w * 0.8;
-      let startY = h * 0.85;
-      if (camber) {
-        startX = camber.transform[4] + w * 0.058;
-        startY = camber.transform[5] - h * 0.01;
-      }
       textContent.items.forEach(item => {
         const x = item.transform[4];
         const yRaw = item.transform[5];
-        // Skip page 1 header text very near the top (y ~ 768 on letter pages)
-        const isTopOfFirstPage = i === 1 && yRaw > h * 0.97;
-
-        // Capture weights below the camber reference, excluding the top 15% of the page
-        if (!isTopOfFirstPage && x > startX && yRaw < startY) {
+        if (x > w * 0.8) {
           const y = Math.round(yRaw);
           if (!lineGroups.has(y)) lineGroups.set(y, []);
           lineGroups.get(y).push(item.str);
         }
       });
+
       lineGroups.forEach((tokens, y) => {
         const line = tokens.join("").trim();
-        if (line) {
+        if (/camber/i.test(line)) {
+          capturing = true;
+          debugLog.push(`Page ${i}: found camber anchor at y=${y}`);
+          return;
+        }
+        if (capturing && line) {
           extractedLines.push(line);
           debugLog.push(`Page ${i}: (y=${y}) ${line}`);
         }
@@ -243,6 +248,11 @@ async function handleFiles(files) {
       }
     }
 
+    debug.innerText = `Features\n${featureSummary()}\n\n${debugLog.join("\n")}`;
+    processText(extractedLines);
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 function processText(lines) {
   cleanData = [];
@@ -255,6 +265,14 @@ function processText(lines) {
       totalWeight += num;
     }
   });
+
+  if (cleanData.length === 0) {
+    output.innerHTML = '<p>No weight values found.</p>';
+    summary.innerText = '';
+    downloadBtn.style.display = 'none';
+    downloadPdfBtn.style.display = 'none';
+    return;
+  }
 
   let html = '<table><tr><th>Weight (lbs)</th></tr>';
   cleanData.forEach(row => {
@@ -341,3 +359,4 @@ annotatePdfBtn.addEventListener("click", async () => {
 </script>
 </body>
 </html>
+
