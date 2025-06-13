@@ -9,11 +9,12 @@ Purchasing has been manually adding printed PDFs and multiplying for cost. HTML 
    Then open `Purchasing Plate Weight V1.06.html` through that address.
    The HTML file loads **pdf.js**, **xlsx**, and **jsPDF** directly from CDNs so
    no extra installation is required.
-3. Use the file picker or drag-and-drop area to load cut list PDFs. Simply
-   clicking the drop zone will open the file dialog. Processing starts
-   automatically once the PDF is selected or dropped. The script extracts the
-   weight values, sums them and displays the total along with download options
-   for Excel and PDF.
+
+3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
+  extracts the weight values, sums them and displays the total along with
+  download options for Excel, a plain PDF, or an annotated version of the
+  original PDF. The annotated export writes the PO number, total weight and
+  estimated cost onto the first page so the summary travels with the document.
 
 
 ### Dependencies
@@ -32,11 +33,6 @@ Purchasing has been manually adding printed PDFs and multiplying for cost. HTML 
 
 
 ### To do / planned improvements
-
-- Allow configuring the cost multiplier. (check if this is already implemented)
-- Add an input area where the user can specify a PO number. (check if this is already implemented)
-- Place the total weight, dollar value and the entered PO number onto the
-  generated PDF before returning it to the user.
+- Support additional export formats such as CSV.
 - Provide UI controls for adjusting parsing thresholds.
-
 
