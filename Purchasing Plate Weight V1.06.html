@@ -216,10 +216,15 @@ async function handleFiles(files) {
       const textContent = await page.getTextContent();
       const w = viewport.width;
       const lineGroups = new Map();
-      textContent.items.forEach(item => {
-        const x = item.transform[4];
-        const yRaw = item.transform[5];
-        if (x > w * 0.8) {
+    }
+
+    debug.innerText = debugLog.join("\n");
+    processText(extractedLines);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processText(lines) {
           const y = Math.round(yRaw);
           if (!lineGroups.has(y)) lineGroups.set(y, []);
           lineGroups.get(y).push(item.str);
