@@ -1,8 +1,9 @@
 # PurchasingPlateWeight
 Purchasing has been manually adding printed PDFs and multiplying for cost. HTML Doc to automate.
 
-- OCR via Tesseract.js has been disabled. Run OCR externally if the PDF does
-  not already contain selectable text.
+- OCR can be toggled on or off when processing files. Use the **Enable OCR**
+  checkbox next to the PO Number field if your PDF does not already contain
+  selectable text.
 ## Running
 1. Clone the repository or download the files.
 2. Serve the directory with a local web server (e.g. `python -m http.server`).
@@ -11,7 +12,9 @@ Purchasing has been manually adding printed PDFs and multiplying for cost. HTML 
    no extra installation is required.
 
 3. Use the file picker or drag-and-drop area to select your cut list PDF. After
-   choosing a file click the **Process PDF** button to parse it. The script
+   choosing a file click the **Process PDF** button to parse it. Enable the
+   **Enable OCR** checkbox if your file is a scanned PDF without selectable text.
+   The script
 
   extracts the weight values by grabbing the last numeric token from each line
   of the rightmost column. It sums these weights and displays the total along
