@@ -259,7 +259,7 @@ async function handleFiles(files) {
       }
     }
 
-    debug.innerText = debugLog.join("\n");
+    debug.innerText = `Features\n${featureSummary()}\n${debugLog.join("\n")}`;
     processText(extractedLines);
   };
   reader.readAsArrayBuffer(file);
