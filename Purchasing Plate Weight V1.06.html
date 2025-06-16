@@ -99,6 +99,7 @@
 <div style="margin-top:10px">
   <label for="poNumber">PO Number:</label>
   <input type="text" id="poNumber" style="width:120px">
+  <label style="margin-left:10px"><input type="checkbox" id="ocrToggle"> Enable OCR</label>
 </div>
 <canvas id="pdf-canvas"></canvas>
 <div id="output"></div>
@@ -124,9 +125,11 @@ const annotatePdfBtn = document.getElementById("annotatePdf");
 const toggleDebug = document.getElementById("toggleDebug");
 const costInput = document.getElementById("costMultiplier");
 const poInput = document.getElementById("poNumber");
+const ocrToggle = document.getElementById("ocrToggle");
 const processBtn = document.getElementById("processBtn");
 let costMultiplier = parseFloat(costInput.value) || 0.95;
 let poNumber = poInput.value || "";
+let ocrEnabled = ocrToggle.checked;
 let cleanData = [];
 let totalWeight = 0;
 let originalPdfBytes;
@@ -137,7 +140,6 @@ function updateSummary() {
 }
 
 const featureStatus = {
-  ocr: typeof Tesseract !== 'undefined',
   dragDrop: true,
   multiPage: true,
   costConfig: true,
@@ -147,7 +149,6 @@ const featureStatus = {
 
 function featureSummary() {
   return [
-    `OCR: ${featureStatus.ocr ? 'implemented' : 'NOT implemented'}`,
     `Drag and Drop: ${featureStatus.dragDrop ? 'implemented' : 'NOT implemented'}`,
     `Multi-page PDF: ${featureStatus.multiPage ? 'implemented' : 'NOT implemented'}`,
     `Configurable Cost Multiplier: ${featureStatus.costConfig ? 'implemented' : 'NOT implemented'}`,
@@ -185,6 +186,10 @@ costInput.addEventListener("input", () => {
 
 poInput.addEventListener("input", () => {
   poNumber = poInput.value;
+});
+
+ocrToggle.addEventListener("change", () => {
+  ocrEnabled = ocrToggle.checked;
 });
 
 fileElem.addEventListener("change", e => {
@@ -245,7 +250,7 @@ async function handleFiles(files) {
         }
       });
 
-      if (textContent.items.length === 0) {
+      if (ocrEnabled && textContent.items.length === 0) {
         const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
         text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach(line => {
           extractedLines.push(line);
