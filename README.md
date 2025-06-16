@@ -11,8 +11,10 @@ Purchasing has been manually adding printed PDFs and multiplying for cost. HTML 
    no extra installation is required.
 
 3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
-  extracts the weight values, sums them and displays the total along with
-  download options for Excel, a plain PDF, or an annotated version of the
+
+  extracts the weight values by grabbing the last numeric token from each line
+  of the rightmost column. It sums these weights and displays the total along
+  with download options for Excel, a plain PDF, or an annotated version of the
   original PDF. The annotated export writes the PO number, total weight and
   estimated cost onto the first page so the summary travels with the document.
 
