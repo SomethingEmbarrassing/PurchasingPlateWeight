@@ -270,7 +270,8 @@ function processText(lines) {
   totalWeight = 0;
 
   lines.forEach(line => {
-    const matches = line.match(/\d+(?:\.\d+)?/g);
+    const normalized = line.replace(/(\d)\s+(?=\d)/g, '$1');
+    const matches = normalized.match(/\d+(?:\.\d+)?/g);
     if (matches && matches.length) {
       const last = parseFloat(matches[matches.length - 1]);
       if (!isNaN(last) && last > 0) {
