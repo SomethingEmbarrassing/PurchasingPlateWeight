@@ -119,6 +119,7 @@ const canvas = document.getElementById("pdf-canvas");
 const ctx = canvas.getContext("2d");
 const downloadBtn = document.getElementById("download");
 const downloadPdfBtn = document.getElementById("downloadPdf");
+const annotatePdfBtn = document.getElementById("annotatePdf");
 const toggleDebug = document.getElementById("toggleDebug");
 const costInput = document.getElementById("costMultiplier");
 const poInput = document.getElementById("poNumber");
@@ -126,6 +127,7 @@ let costMultiplier = parseFloat(costInput.value) || 0.95;
 let poNumber = poInput.value || "";
 let cleanData = [];
 let totalWeight = 0;
+let originalPdfBytes;
 
 function updateSummary() {
   summary.innerText = `Total Weight: ${totalWeight.toLocaleString()} lbs | Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -241,16 +243,24 @@ async function handleFiles(files) {
       }
     }
 
+    debug.innerText = debugLog.join("\n");
+    processText(extractedLines);
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 function processText(lines) {
   cleanData = [];
   totalWeight = 0;
 
   lines.forEach(line => {
-    const num = parseFloat(line.replace(/[^0-9.]/g, ""));
-    if (!isNaN(num) && num > 0) {
-      cleanData.push({ weight: num });
-      totalWeight += num;
+    const matches = line.match(/\d+(?:\.\d+)?/g);
+    if (matches && matches.length) {
+      const last = parseFloat(matches[matches.length - 1]);
+      if (!isNaN(last) && last > 0) {
+        cleanData.push({ weight: last });
+        totalWeight += last;
+      }
     }
   });
 
@@ -263,6 +273,7 @@ function processText(lines) {
   updateSummary();
   downloadBtn.style.display = "inline-block";
   downloadPdfBtn.style.display = "inline-block";
+  annotatePdfBtn.style.display = "inline-block";
 }
 
 
@@ -280,12 +291,24 @@ downloadPdfBtn.addEventListener("click", () => {
   const doc = new jsPDF();
   doc.setFontSize(10);
   let y = 10;
+
   if (poNumber) {
     doc.text(`PO Number: ${poNumber}`, 10, y);
     y += 7;
   }
 
-  cleanData.forEach(row => {
+  doc.text(`Total Weight: ${totalWeight.toLocaleString()} lbs`, 10, y);
+  y += 7;
+  doc.text(
+    `Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+    })}`,
+    10,
+    y
+  );
+  y += 10;
+
+  cleanData.forEach((row) => {
     doc.text(`Weight: ${row.weight.toLocaleString()} lbs`, 10, y);
     y += 7;
     if (y > 280) {
@@ -293,11 +316,35 @@ downloadPdfBtn.addEventListener("click", () => {
       y = 10;
     }
   });
-  y += 10;
-  doc.text(`Total Weight: ${totalWeight.toLocaleString()} lbs`, 10, y);
-  y += 7;
-  doc.text(`Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 10, y);
+
   doc.save("cleaned_weights.pdf");
+});
+
+annotatePdfBtn.addEventListener("click", async () => {
+  if (!originalPdfBytes) return;
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.load(originalPdfBytes);
+  const first = pdfDoc.getPages()[0];
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  let y = first.getHeight() - 40;
+  if (poNumber) {
+    first.drawText(`PO Number: ${poNumber}`, { x: 50, y, size: 12, font, color: rgb(0, 0, 0) });
+    y -= 15;
+  }
+  first.drawText(`Total Weight: ${totalWeight.toLocaleString()} lbs`, { x: 50, y, size: 12, font, color: rgb(0, 0, 0) });
+  y -= 15;
+  first.drawText(
+    `Estimated Cost: $${(totalWeight * costMultiplier).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+    { x: 50, y, size: 12, font, color: rgb(0, 0, 0) }
+  );
+  const bytes = await pdfDoc.save();
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'annotated.pdf';
+  a.click();
+  URL.revokeObjectURL(url);
 });
 </script>
 </body>
