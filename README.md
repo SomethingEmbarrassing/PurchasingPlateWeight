@@ -10,7 +10,8 @@ Purchasing has been manually adding printed PDFs and multiplying for cost. HTML 
    The HTML file loads **pdf.js**, **xlsx**, and **jsPDF** directly from CDNs so
    no extra installation is required.
 
-3. Use the file picker or drag-and-drop area to load cut list PDFs. The script
+3. Use the file picker or drag-and-drop area to select your cut list PDF. After
+   choosing a file click the **Process PDF** button to parse it. The script
 
   extracts the weight values by grabbing the last numeric token from each line
   of the rightmost column. It sums these weights and displays the total along
